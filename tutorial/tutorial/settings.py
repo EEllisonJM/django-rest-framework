@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '616w0w&f^3mfwavm8far%0+9z!*cl5460q#l$%e)z5bbad*iip'
+SECRET_KEY = '1c@rul03-aw)4_u&ofi*re_r0(ukc#lbtx7vq&w647_a%bl*7j'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -29,12 +29,8 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
-# Pagination allows you to control how many objects per page are returned.
-REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10
-}
-# Add 'rest_framework' to INSTALLED_APPS.
+# We'll need to add our new snippets app and the rest_framework app to
+#  INSTALLED_APPS.
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -43,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'snippets.apps.SnippetsConfig',
 ]
 
 MIDDLEWARE = [
@@ -54,10 +51,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-# Django determines the root URLconf module to use. Ordinarily, this is the
-# value of the ROOT_URLCONF setting, but if the incoming HttpRequest object
-# has a urlconf attribute (set by middleware), its value will be used in place
-# of the ROOT_URLCONF setting.
+
 ROOT_URLCONF = 'tutorial.urls'
 
 TEMPLATES = [
@@ -121,6 +115,7 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
