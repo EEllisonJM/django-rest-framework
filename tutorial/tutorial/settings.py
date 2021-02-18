@@ -23,10 +23,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = '1c@rul03-aw)4_u&ofi*re_r0(ukc#lbtx7vq&w647_a%bl*7j'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+#You're seeing this error because you have DEBUG = True in your Django settings file. Change that to False, and Django will display a standard 404 page.
 
-ALLOWED_HOSTS = []
+# DEBUG = True
+# ALLOWED_HOSTS = []
 
+DEBUG = False
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 # We'll need to add our new snippets app and the rest_framework app to
@@ -38,8 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
-    'snippets.apps.SnippetsConfig',
+    'rest_framework', # NEW
+    'snippets.apps.SnippetsConfig', # NEW
 ]
 
 MIDDLEWARE = [
