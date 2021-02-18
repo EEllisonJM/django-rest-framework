@@ -25,11 +25,11 @@ SECRET_KEY = '1c@rul03-aw)4_u&ofi*re_r0(ukc#lbtx7vq&w647_a%bl*7j'
 # SECURITY WARNING: don't run with debug turned on in production!
 #You're seeing this error because you have DEBUG = True in your Django settings file. Change that to False, and Django will display a standard 404 page.
 
-# DEBUG = True
-# ALLOWED_HOSTS = []
+DEBUG = True
+ALLOWED_HOSTS = []
 
-DEBUG = False
-ALLOWED_HOSTS = ['*']
+#DEBUG = False
+#ALLOWED_HOSTS = ['*']
 
 # Application definition
 # We'll need to add our new snippets app and the rest_framework app to

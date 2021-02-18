@@ -1,2 +1,5 @@
 .vscode
 env
+/snippets/__pycache__
+/snippets/migrations/__pycache__
+/tutorial/__pycache__
