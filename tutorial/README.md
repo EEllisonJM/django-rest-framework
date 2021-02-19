@@ -444,7 +444,7 @@ class SnippetDetail(mixins.RetrieveModelMixin,
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
 ```
-## Using generic class-based views
+## Rewriting our API using generic class-based views
 REST framework provides a set of already mixed-in generic views that we can use to trim down our views.py module even more.
 ```python
 # snippets/views.py
@@ -464,7 +464,282 @@ class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
 ```
 😊😊😊😊😊😊😊😊😊😊😊😊😊😊😊😊😊😊😊😊😊😊😊😊😊😊😊😊😊😊
 # Tutorial 4: Authentication & Permissions
+## Adding information to our model
+```python
+# snippets/models.py 
+from django.db import models
+from pygments.lexers import get_all_lexers
+from pygments.styles import get_all_styles
+from pygments.lexers import get_lexer_by_name # NEW
+from pygments.formatters.html import HtmlFormatter # NEW
+from pygments import highlight # NEW
 
+LEXERS = [item for item in get_all_lexers() if item[1]]
+LANGUAGE_CHOICES = sorted([(item[1][0], item[0]) for item in LEXERS])
+STYLE_CHOICES = sorted([(item, item) for item in get_all_styles()])
+
+class Snippet(models.Model):
+    created = models.DateTimeField(auto_now_add=True)
+    title = models.CharField(max_length=100, blank=True, default='')
+    code = models.TextField()
+    linenos = models.BooleanField(default=False)
+    language = models.CharField(choices=LANGUAGE_CHOICES, default='python', max_length=100)
+    style = models.CharField(choices=STYLE_CHOICES, default='friendly', max_length=100)
+    # Adding the next two lines
+    owner = models.ForeignKey('auth.User', related_name='snippets', on_delete=models.CASCADE) # NEW
+    highlighted = models.TextField() # NEW
+
+    class Meta:
+        ordering = ['created']
+
+# Add save method
+    def save(self, *args, **kwargs): # NEW
+        """
+        Use the `pygments` library to create a highlighted HTML
+        representation of the code snippet.
+        """
+        lexer = get_lexer_by_name(self.language)
+        linenos = 'table' if self.linenos else False
+        options = {'title': self.title} if self.title else {}
+        formatter = HtmlFormatter(style=self.style, linenos=linenos, full=True, **options)
+        self.highlighted = highlight(self.code, lexer, formatter)
+        super(Snippet, self).save(*args, **kwargs)
+```
+Delete the database and start again.
+```
+rm -r db.sqlite3
+rm -r snippets/migrations
+python manage.py makemigrations snippets
+python manage.py migrate
+```
+Create a user, to use for testing the API.
+```
+python manage.py createsuperuser
+```
+## Adding endpoints for our User models
+```python
+# snippet/serializers.py
+from rest_framework import serializers
+from snippets.models import Snippet, LANGUAGE_CHOICES, STYLE_CHOICES
+from django.contrib.auth.models import User # NEW
+
+class SnippetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Snippet
+        fields = ['id', 'title', 'code', 'linenos', 'language', 'style']
+    
+    def create(self, validated_data):
+        """
+        Create and return a new `Snippet` instance, given the validated data.
+        """
+        return Snippet.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        """
+        Update and return an existing `Snippet` instance, given the validated data.
+        """
+        instance.title = validated_data.get('title', instance.title)
+        instance.code = validated_data.get('code', instance.code)
+        instance.linenos = validated_data.get('linenos', instance.linenos)
+        instance.language = validated_data.get('language', instance.language)
+        instance.style = validated_data.get('style', instance.style)
+        instance.save()
+        return instance
+# NEW class
+class UserSerializer(serializers.ModelSerializer):
+    snippets = serializers.PrimaryKeyRelatedField(many=True, queryset=Snippet.objects.all())
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'snippets']
+```
+Because 'snippets' is a reverse relationship on the User model, it will not be included by default when using the ModelSerializer class, so we needed to add an explicit field for it.
+```python
+# snippets/views.py
+from django.contrib.auth.models import User # NEW
+from snippets.serializers import UserSerializer # NEW
+from snippets.models import Snippet
+from snippets.serializers import SnippetSerializer
+from rest_framework import generics
+
+class SnippetList(generics.ListCreateAPIView):
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+    
+class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+# NEW class
+class UserList(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+# NEW class
+class UserDetail(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+```
+Add those views into the API, by referencing them from the URL conf.
+```python
+#snippets/urls.py
+from django.urls import path
+from rest_framework.urlpatterns import format_suffix_patterns
+from snippets import views
+
+urlpatterns = [
+   path('snippets/', views.SnippetList.as_view()),
+   path('snippets/<int:pk>/', views.SnippetDetail.as_view()),
+   path('users/', views.UserList.as_view()),
+   path('users/<int:pk>/', views.UserDetail.as_view()),
+]
+
+urlpatterns = format_suffix_patterns(urlpatterns)
+```
+## Associating Snippets with Users
+```python
+# snippets/views.py
+from snippets.models import Snippet
+from snippets.serializers import SnippetSerializer
+from rest_framework import generics
+
+
+class SnippetList(generics.ListCreateAPIView):
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+    # NEW  method
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+```
+The create() method of our serializer will now be passed an additional 'owner' field, along with the validated data from the request.
+
+## Updating our serializer
+```python
+# snippet/serializers.py
+from rest_framework import serializers
+from snippets.models import Snippet, LANGUAGE_CHOICES, STYLE_CHOICES
+from django.contrib.auth.models import User 
+
+class SnippetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Snippet
+        fields = ['id', 'title', 'code', 'linenos', 'language', 'style']
+        owner = serializers.ReadOnlyField(source='owner.username') # NEW
+    
+    def create(self, validated_data):
+        """
+        Create and return a new `Snippet` instance, given the validated data.
+        """
+        return Snippet.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        """
+        Update and return an existing `Snippet` instance, given the validated data.
+        """
+        instance.title = validated_data.get('title', instance.title)
+        instance.code = validated_data.get('code', instance.code)
+        instance.linenos = validated_data.get('linenos', instance.linenos)
+        instance.language = validated_data.get('language', instance.language)
+        instance.style = validated_data.get('style', instance.style)
+        instance.save()
+        return instance
+class UserSerializer(serializers.ModelSerializer):
+    snippets = serializers.PrimaryKeyRelatedField(many=True, queryset=Snippet.objects.all())
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'snippets']
+```
+## Adding required permissions to views
+```python
+# snippets/views.py
+from rest_framework import permissions # NEW
+from snippets.models import Snippet
+from snippets.serializers import SnippetSerializer
+from rest_framework import generics
+
+
+class SnippetList(generics.ListCreateAPIView):
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+```
+## Adding login to the Browsable API
+```python
+# tutorial/urls.py
+from django.contrib import admin
+from django.urls import path, include
+from snippets import views
+from django.urls import path, include
+urlpatterns = [
+    path('', include('snippets.urls')),
+    path('api-auth/', include('rest_framework.urls')), # NEW
+]
+```
+## Object level permissions
+```python
+# snippets/permissions.py
+from rest_framework import permissions
+
+
+class IsOwnerOrReadOnly(permissions.BasePermission):
+    """
+    Custom permission to only allow owners of an object to edit it.
+    """
+
+    def has_object_permission(self, request, view, obj):
+        # Read permissions are allowed to any request,
+        # so we'll always allow GET, HEAD or OPTIONS requests.
+        if request.method in permissions.SAFE_METHODS:
+            return True
+
+        # Write permissions are only allowed to the owner of the snippet.
+        return obj.owner == request.user
+
+```
+Now we can add that custom permission to our snippet instance endpoint, by editing the permission_classes property on the SnippetDetail view class:
+
+```python
+# snippets/views.py
+from rest_framework import permissions # NEW
+from snippets.models import Snippet
+from snippets.serializers import SnippetSerializer
+from rest_framework import generics
+from snippets.permissions import IsOwnerOrReadOnly # NEW
+
+class SnippetList(generics.ListCreateAPIView):
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly,IsOwnerOrReadOnly] # NEW
+
+```
+## Authenticating with the API
+```
+http POST http://127.0.0.1:8000/snippets/ code="print(123)"
+```
+Request by including the username and password of one of the users we created earlier.
+```
+http -a admin:password123 POST http://127.0.0.1:8000/snippets/ code="print(789)"
+```
+✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨
 # Tutorial 5: Relationships & Hyperlinked APIs
 ## Creating an endpoint for the root of our API
 ## Creating an endpoint for the highlighted snippets
