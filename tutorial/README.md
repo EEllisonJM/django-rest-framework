@@ -107,6 +107,9 @@ Simple default implementations for the create() and update() methods.
 Our SnippetSerializer class is replicating a lot of information that's also contained in the Snippet model. It would be nice if we could keep our code a bit more concise.
 ```python
 # snippet/serializers.py
+from rest_framework import serializers
+from snippets.models import Snippet, LANGUAGE_CHOICES, STYLE_CHOICES
+
 class SnippetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Snippet
@@ -222,13 +225,108 @@ Get a particular snippet by referencing its id:
 ```
 http http://127.0.0.1:8000/snippets/1/
 ```
-🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
 # Tutorial 2: Requests and Responses
 ## Wrapping API views
 REST framework provides two wrappers you can use to write API views.
 - The @api_view decorator for working with function based views.
 - The APIView class for working with class-based views.
+### Refactor our views slightly.
+```python
+# snippets/views.py
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from snippets.models import Snippet
+from snippets.serializers import SnippetSerializer
 
+
+@api_view(['GET', 'POST'])
+def snippet_list(request):
+    """
+    List all code snippets, or create a new snippet.
+    """
+    if request.method == 'GET':
+        snippets = Snippet.objects.all()
+        serializer = SnippetSerializer(snippets, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        serializer = SnippetSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['GET', 'PUT', 'DELETE'])
+def snippet_detail(request, pk):
+    """
+    Retrieve, update or delete a code snippet.
+    """
+    try:
+        snippet = Snippet.objects.get(pk=pk)
+    except Snippet.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = SnippetSerializer(snippet)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = SnippetSerializer(snippet, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        snippet.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+```
+## Adding optional format suffixes to our URLs
+Using format suffixes gives us URLs that explicitly refer to a given format, and means our API will be able to handle URLs such as http://example.com/api/items/4.json.
+```python
+def snippet_list(request, format=None):
+```
+And
+```python
+def snippet_detail(request, pk, format=None):
+```
+To append a set of format_suffix_patterns in addition to the existing URLs.
+```python
+#snippets/urls.py
+from django.urls import path
+from rest_framework.urlpatterns import format_suffix_patterns
+from snippets import views
+
+urlpatterns = [
+    path('snippets/', views.snippet_list),
+    path('snippets/<int:pk>', views.snippet_detail),
+]
+
+urlpatterns = format_suffix_patterns(urlpatterns)
+```
+### How's it looking?
+```
+http http://127.0.0.1:8000/snippets/
+```
+```
+http http://127.0.0.1:8000/snippets/ Accept:application/json  # Request JSON
+```
+```
+http http://127.0.0.1:8000/snippets/ Accept:text/html         # Request HTML
+```
+http http://127.0.0.1:8000/snippets.json  # JSON suffix
+```
+```
+http http://127.0.0.1:8000/snippets.api   # Browsable API suffix
+```
+```
+http --form POST http://127.0.0.1:8000/snippets/ code="print(123)" # POST using form data
+```
+```
+http --json POST http://127.0.0.1:8000/snippets/ code="print(456)"# POST using JSON
+```
+👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍👍
 # Tutorial 3
 ## Tutorial 3: Class-based Views
 ## Rewriting our API using class-based views
