@@ -1,4 +1,4 @@
-# Implement Token-based authentication using Django REST
+# Implement Token-based authentication using Django REST Framework
 ## Setting up a new environment
 ```
 python3 -m venv env

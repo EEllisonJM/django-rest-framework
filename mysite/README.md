@@ -1,24 +1,29 @@
 # Set up Django
-
-## Install Django:
+## Setting up a new environment
 ```
-$ pip install django
+python3 -m venv env
+```
+Activate the virtual environment
+```
+source env/bin/activate
+```
+## Install our package requirements. Django and DjangoRestFramework (DRF):
+```
+pip install django
+pip install djangorestframework
 ```
 ## Start a new Django project:
 ```
-$ django-admin startproject mysite
+mkdir mysite
+cd mysite
+django-admin.py startproject mysite .
+cd mysite
 ```
-## Test run the Django server:
+## Create API a new app 'myapi'
 ```
-$ python manage.py runserver
+python manage.py startapp myapi
 ```
-Go to http://localhost:8000/
-
-## Create API app
-```
-$ python manage.py startapp myapi
-```
-## Register the myapi app with the mysite project
+## Add apps to the settings.py module:
 ```python
 # mysite/settings.py
 INSTALLED_APPS = [
@@ -29,15 +34,28 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'myapi.apps.MyapiConfig', # NEW
+    'rest_framework', # NEW
 ]
+```
+## Add pagination
+```python
+# mysite/settings.py
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10
+}
 ```
 ## Migrate the database
 ```
-$ python manage.py migrate
+python manage.py migrate
 ```
 ## Create Super User
 ```
-$ python manage.py createsuperuser
+python manage.py createsuperuser
+```
+or
+```
+python manage.py createsuperuser --username ellis --email ellis@gmail.com
 ```
 ## Start up the Django server:
 
@@ -60,10 +78,10 @@ class Hero(models.Model):
 ```
 ## Make migrations
 ```
-$ python manage.py makemigrations
+python manage.py makemigrations
 ```
 ```
-$ python manage.py migrate
+python manage.py migrate
 ```
 ## Register Hero with the admin site
 ```python
@@ -80,41 +98,13 @@ $ python manage.py runserver
 And then navigate to http://localhost:8000/admin/
 ## Create some new heroes
 
-# Set up Django REST Framework
-```
-$ pip install djangorestframework
-```
-## Add Django  REST Framework
-```python
- # mysite/settings.py:
- INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'myapi.apps.MyapiConfig',
-    'rest_framework', # NEW
-]
-```
-## Add pagination
-```python
-# mysit/settings.py
-REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10
-}
-```
 # Serialize the Hero model
 Serialization is the process of converting a Model to JSON. Using a serializer, we can specify what fields should be present in the JSON representation of the model.
 ##  Create serialazer file
 ```python
 # myapi/serializers.py
 from rest_framework import serializers
-
 from .models import Hero
-
 class HeroSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Hero
@@ -164,4 +154,13 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]
 ```
+## Run the Django server:
+```
+python manage.py runserver
+```
+Go to
+```
+http://localhost:8000/heroes/
+```
+
 From https://medium.com/swlh/build-your-first-rest-api-with-django-rest-framework-e394e39a482c
