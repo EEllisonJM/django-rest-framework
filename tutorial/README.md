@@ -100,9 +100,26 @@ class SnippetSerializer(serializers.Serializer):
         instance.save()
         return instance
 ```
-# Using ModelSerializers
+## Using ModelSerializers
 It's important to remember that ModelSerializer classes don't do anything particularly magical, they are simply a shortcut for creating serializer classes:
 
 An automatically determined set of fields.
 Simple default implementations for the create() and update() methods.
+
+# Tutorial 2: Requests and Responses
+## Wrapping API views
+REST framework provides two wrappers you can use to write API views.
+- The @api_view decorator for working with function based views.
+- The APIView class for working with class-based views.
+
+# Tutorial 3
+## Tutorial 3: Class-based Views
+## Rewriting our API using class-based views
+- Refactoring
+## Using mixins
+## Using generic class-based views
+
+# Tutorial 4: Authentication & Permissions
+
+
 
