@@ -121,5 +121,8 @@ REST framework provides two wrappers you can use to write API views.
 
 # Tutorial 4: Authentication & Permissions
 
-
+# Tutorial 5: Relationships & Hyperlinked APIs
+## Creating an endpoint for the root of our API
+## Creating an endpoint for the highlighted snippets
+# Hyperlinking our API
 

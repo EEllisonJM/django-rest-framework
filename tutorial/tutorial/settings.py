@@ -34,6 +34,10 @@ ALLOWED_HOSTS = []
 # Application definition
 # We'll need to add our new snippets app and the rest_framework app to
 #  INSTALLED_APPS.
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10
+}
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
