@@ -9,3 +9,6 @@ from rest_framework import generics
 class CodigoPostalViewSet(viewsets.ModelViewSet):
     queryset = CodigoPostal.objects.all().order_by('codigo')
     serializer_class = CodigoPostalSerializer
+
+    # def getByCodigoBarra:
+    #     wild_books = Book.objects.filter(title__contains='wild')

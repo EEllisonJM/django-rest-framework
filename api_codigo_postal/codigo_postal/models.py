@@ -2,6 +2,8 @@
 # codigo_postal/models.py
 from django.db import models
 
+
+# Clase CodigoPostal, que deriva de la clase Model
 class CodigoPostal(models.Model):
     # An id field is added automatically.
     codigo = models.CharField(max_length=5)

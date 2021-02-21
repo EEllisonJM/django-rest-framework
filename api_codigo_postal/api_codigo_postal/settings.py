@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework', # NEW
-    'codigo_postal', # NEW
+    'codigo_postal.apps.CodigoPostalConfig', # NEW [# api_codigo_postal/codigo_postal/apps.py]
 ]
 
 MIDDLEWARE = [

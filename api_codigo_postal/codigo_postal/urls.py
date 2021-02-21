@@ -3,6 +3,9 @@ from django.urls import include, path
 from rest_framework import routers
 from . import views
 
+#  La notación views.CodigoPostlViewSer indica la clase a usar 
+# CodigoPostalViewSet y se puede encontrar en un módulo llamado views
+# (es decir, dentro del fichero llamado views.py).
 router = routers.DefaultRouter()
 router.register(r'codigo_postal', views.CodigoPostalViewSet)
 
